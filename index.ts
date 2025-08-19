@@ -424,6 +424,8 @@ export default async (context: Context) => {
 
     async function upsertStopDocument(stop: StopPlace) {
         const documentId = stop.id;
+        //Document ID must be alphanumeric
+        const stopId = stop.id.replace(/[^a-zA-Z0-9]/g, '');
         const payload = {
             stopPlaceId: stop.id,
             stopPlaceName: stop.name,
@@ -438,7 +440,7 @@ export default async (context: Context) => {
                 await databases.createDocument(
                     databaseId,
                     departuresCollectionId,
-                    documentId,
+                    stopId,
                     payload,
                     [Permission.read(Role.any())]
                 );
