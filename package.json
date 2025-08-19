@@ -1,0 +1,16 @@
+{
+  "name": "entur",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "graphql": "^16.11.0",
+    "node-appwrite": "^17.2.0"
+  }
+}
