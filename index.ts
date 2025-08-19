@@ -423,8 +423,7 @@ export default async (context: Context) => {
     }
 
     async function upsertStopDocument(stop: StopPlace) {
-        const documentId = stop.id;
-        //Document ID must be alphanumeric
+        // Document ID must be alphanumeric in Appwrite; sanitize Entur IDs
         const stopId = stop.id.replace(/[^a-zA-Z0-9]/g, '');
         const payload = {
             stopPlaceId: stop.id,
@@ -434,16 +433,27 @@ export default async (context: Context) => {
         } as any;
 
         try {
-            await databases.updateDocument(databaseId, departuresCollectionId, documentId, payload);
+            // First try to update existing sanitized document
+            await databases.updateDocument(databaseId, departuresCollectionId, stopId, payload);
         } catch (e: any) {
             if (e?.code === 404) {
-                await databases.createDocument(
-                    databaseId,
-                    departuresCollectionId,
-                    stopId,
-                    payload,
-                    [Permission.read(Role.any())]
-                );
+                // If not found, try to create. Handle race: if someone else created it, retry update.
+                try {
+                    await databases.createDocument(
+                        databaseId,
+                        departuresCollectionId,
+                        stopId,
+                        payload,
+                        [Permission.read(Role.any())]
+                    );
+                } catch (createErr: any) {
+                    if (createErr?.code === 409) {
+                        // Already created concurrently; update instead
+                        await databases.updateDocument(databaseId, departuresCollectionId, stopId, payload);
+                    } else {
+                        throw createErr;
+                    }
+                }
             } else {
                 throw e;
             }
